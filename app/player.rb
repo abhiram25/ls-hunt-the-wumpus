@@ -4,7 +4,6 @@ class Player
 
   def initialize
     @arrows = 5
-    @dead = false
     @last_move = nil
   end
 
@@ -20,14 +19,6 @@ class Player
 
   def adjoining_rooms
     current_room.adjoining_rooms
-  end
-
-  def kill
-    @dead = true
-  end
-
-  def dead?
-    @dead
   end
 
   def out_of_arrows?
