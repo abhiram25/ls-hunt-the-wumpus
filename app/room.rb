@@ -20,25 +20,36 @@ class Room
     @hazard = hazard
   end
 
-  def result_of_entering
+  def move_outcome
     case hazard
-    when :bat then :carried_by_bats
-    when :pit then :fell_into_pit
-    when :wumpus then :killed_by_wumpus
-    else :safe_room
+    when :bat
+      { result: :carried, message: 'You were carried by bats to another room.' }
+    when :pit
+      { result: :dead, message: 'You fell into a pit and died.' }
+    when :wumpus
+      { result: :dead, message: 'You were killed by the Wumpus.' }
+    else
+      { result: :safe, message: 'This room is safe. Whew!' }
     end
   end
 
-  def nearby_message
+  def message
     case hazard
-    when :bat then 'Bats nearby!'
-    when :pit then 'I feel a draft!'
-    when :wumpus then 'I smell a Wumpus!'
+    when :bat
+      'Bats nearby!'
+    when :pit
+      'I feel a draft!'
+    when :wumpus
+      'I smell a Wumpus!'
     end
   end
 
   def empty?
     !hazard
+  end
+
+  def incoming_arrow
+    hazard == :wumpus ? :hit : :missed
   end
 
   def to_s

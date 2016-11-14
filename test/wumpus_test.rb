@@ -2,11 +2,14 @@ require 'minitest/autorun'
 require 'minitest/reporters'
 Minitest::Reporters.use!
 
-require_relative '../app/map'
+require_relative '../app/wumpus'
 
-class MapTest < Minitest::Test
+class WumpusTest < Minitest::Test
   def setup
-    @map = Map.new
+    @game = WumpusGame.new
+    @player = @game.player
+    @wumpus = @game.wumpus
+    @map = @game.map
   end
 
   def test_map_has_20_rooms
@@ -47,4 +50,35 @@ class MapTest < Minitest::Test
 
     assert_equal expected_rooms, actual_rooms
   end
-end  
+
+  def test_player_move_method_changes_player_room
+    room = @map.rooms(1)
+    @player.move(room)
+
+    new_room = @map.rooms(2)
+    @player.move(new_room)
+
+    refute_equal 1, @player.current_room.number
+  end
+
+  def test_room_returns_hit_if_wumpus_is_hit_by_arrow
+    wumpus_room = @map.rooms.find { |room| room.hazard == :wumpus }
+    wumpus_room.incoming_arrow
+    assert_equal :hit, wumpus_room.incoming_arrow
+  end
+
+  def test_pit_rooms_have_correct_message
+    pit_room = @map.rooms.find { |room| room.hazard == :pit }
+    assert_equal 'I feel a draft!', pit_room.message
+  end
+
+  def test_bat_rooms_have_correct_message
+    bat_room = @map.rooms.find { |room| room.hazard == :bat }
+    assert_equal 'Bats nearby!', bat_room.message
+  end
+
+  def test_wumpus_room_has_correct_message
+    wumpus_room = @map.rooms.find { |room| room.hazard == :wumpus }
+    assert_equal 'I smell a Wumpus!', wumpus_room.message
+  end
+end
