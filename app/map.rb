@@ -15,16 +15,6 @@ class Map
     @rooms.select(&:empty?)
   end
 
-  # Recursively builds up an array of room numbers that are within
-  # n steps of current room.
-  def rooms_within_range(rooms, distance)
-    return rooms.sort if distance.zero?
-    room_numbers = rooms.map { |number| rooms(number).adjoining_rooms }
-    unique_room_numbers = room_numbers.flatten.uniq
-
-    rooms_within_range(unique_room_numbers, distance - 1)
-  end
-
   private
 
   def generate_rooms
