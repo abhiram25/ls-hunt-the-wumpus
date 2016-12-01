@@ -5,9 +5,13 @@ require_relative 'utilities'
 class WumpusGame
   include Utilities
 
-  attr_reader :player, :wumpus, :map
+  attr_accessor :io_state
+  attr_reader :state, :input_options, :player, :wumpus, :map
 
   def initialize
+    @io_state = :input_required
+    @state = :new_game
+    @input_options = []
     @map = Map.new
     @player = Player.new
     @wumpus = nil
@@ -19,93 +23,111 @@ class WumpusGame
     @player.move(starting_room)
   end
 
-  def start
-    fancy_output 'Welcome to Hunt the Wumpus!'
-    enter_to_continue
-    nearby_room_messages
-    loop do
-      display_current_room
-      choice = player_choice
-      move_or_shoot(choice)
-      display_move_outcome if choice == 'm'
-      update_result
-      break if game_over?
-      nearby_room_messages
-    end
-    fancy_output final_result if final_result
-    fancy_output 'Thanks for Playing Hunt the Wumpus. Goodbye!'
+  def player_choice(input=nil)
+    @state = :player_choice
+    @input_options = ['m', 's']
+    @io_state = :input_required
   end
 
-  private
-
-  def player_choice
-    if player.can_shoot?
-      message = 'What would you like to do? (s)hoot or (m)ove:'
-      get_input(message, choices: ['m', 's'])
+  def process_player_choice(input=nil)
+    case input.downcase
+    when 's'
+      player_choice_shoot
+    when 'm'
+      player_choice_move
     else
-      'm'
+      invalid_input
     end
   end
 
-  def move_or_shoot(choice)
-    choice == 'm' ? player_move : player_shoot
+  def player_choice_move(input=nil)
+    @state = :pick_room
+    @input_options = adjoining_rooms.map { |room| room.number }
+    @io_state = :input_required
   end
 
-  def player_move
-    room_choices = adjoining_rooms.map(&:to_s)
-    message = "Pick a room to move to: #{room_choices.join(', ')}"
-    room_number = get_input(message, choices: room_choices, number: true)
-    room = map.rooms(room_number)
-    player.move(room)
-  end
-
-  def player_shoot
-    distance = choose_shot_distance
-    room_number = draw_arrow_path(distance)
-    room = map.rooms(room_number)
-    player.shoot
-    result_of_shot = room.incoming_arrow
-    @wumpus = :dead if result_of_shot == :hit
-    animate('>>>--------~>')
-  end
-
-  def display_move_outcome
-    fancy_output player.current_room.move_outcome[:message]
-  end
-
-  def update_result
-    outcome = player.current_room.move_outcome
-    
-    if outcome[:result] == :dead
-      player.kill
-    elsif outcome[:result] == :carried
-      new_room = @map.rooms(rand(1..20))
-      player.move(new_room)
-      display_move_outcome
-      update_result
+  def process_room_choice(room_choice)
+    room_number = room_choice.to_i
+    if @input_options.include?(room_number)
+      room = map.rooms(room_number)
+      player.move(room)
+      process_move_outcome
+    else
+      invalid_input
     end
+  end
+
+  def process_move_outcome
+    hazard = player.current_room.hazard
+    if hazard
+      @state = hazard
+    else
+      @state = :safe
+    end
+    @input_options = []
+    @io_state = :input_not_required
+  end
+
+  def room_messages(input = nil)
+    @state = :room_messages
+    current_room = player.current_room
+    @input_options = [current_room].concat(nearby_room_messages)
+    @io_state = :input_not_required
   end
 
   def nearby_room_messages
     messages = adjoining_rooms.map(&:message)
-    unique = messages.compact.uniq
-    unique.each { |message| fancy_output message }
+    messages.compact.uniq
   end
 
-  def game_over?
-    player.dead? || player.out_of_arrows? || wumpus == :dead
+  def carry_player(input = nil)
+    new_room = @map.rooms(rand(1..20))
+    player.move(new_room)
+    process_move_outcome
   end
 
-  def final_result
-    if player.out_of_arrows?
-      'You ran out of arrows and lost the game.'
-    elsif wumpus == :dead
-      'You killed the Wumpus and won the game.'
+  def player_choice_shoot
+    @state = :pick_target_room
+    @input_options = adjoining_rooms.map { |room| room.number }
+    @io_state = :input_required
+  end
+
+  def fire_arrow(target_room)
+    room_number = target_room.to_i
+    if @input_options.include?(room_number)
+      room = map.rooms(room_number)
+      player.shoot
+      result_of_shot = room.incoming_arrow
+      process_shot_result(result_of_shot)
+    else
+      invalid_input
     end
   end
 
-  def display_current_room
-    fancy_output "You are currently in room #{player.current_room}"
+  def process_shot_result(result_of_shot)
+    if result_of_shot == :hit
+      @state = :wumpus_killed
+    elsif @player.out_of_arrows?
+      @state = :out_of_arrows
+    else
+      @state = :shot_missed
+    end
+    @input_options = []
+    @io_state = :input_not_required
+  end
+
+  def invalid_input
+    @io_state = :invalid_input
+  end
+
+  def end_game(input = nil)
+    @state = :game_over
+    @input_options = []
+    @io_state = :input_not_required
+  end
+
+  def over?
+    @state == :game_over
   end
 
   def adjoining_rooms(room_number = nil)
@@ -115,22 +137,5 @@ class WumpusGame
     else
       player.adjoining_rooms.map { |num| @map.rooms(num) }
     end
-  end
-
-  def draw_arrow_path(distance)
-    room_number = player.current_room.number
-    distance.times do
-      room_choices = adjoining_rooms(room_number).map(&:to_s)
-      message = "Draw your arrow path by selecting a room: #{room_choices.join(', ')}"
-      choice = get_input(message, choices: room_choices, number: true)
-      room_number = choice
-    end
-    room_number
-  end
-
-  def choose_shot_distance
-    message = 'Choose a shot distance in number of rooms from 1-5'
-    choices = [1, 2, 3, 4, 5].map(&:to_s)
-    get_input(message, choices: choices, number: true)
   end
 end

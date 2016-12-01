@@ -1,0 +1,12 @@
+:new_game: room_messages
+:player_choice: process_player_choice
+:pick_room: process_room_choice
+:bat: carry_player
+:pit: end_game
+:wumpus: end_game
+:safe: room_messages
+:room_messages: player_choice
+:pick_target_room: fire_arrow
+:out_of_arrows: end_game
+:wumpus_killed: end_game
+:shot_missed: player_choice_move
