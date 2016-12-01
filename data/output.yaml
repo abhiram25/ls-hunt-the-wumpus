@@ -1,0 +1,14 @@
+:new_game: 'Welcome to Hunt the Wumpus! Press enter to continue...'
+:player_choice: 'What would you like to do? (s)hoot or (m)ove please choose: '
+:invalid_input: 'Sorry, that choice was invalid'
+:pick_room: "Pick a room to move to: "
+:bat: 'This room has bats! You were carried by the bats to another room.'
+:pit: 'This room has a pit! You fell into the pit and died.'
+:wumpus: 'The Wumpus is in this room! You were killed by the Wumpus.'
+:safe: 'This room is safe. Whew!'
+:room_messages: "You are currently in room "
+:pick_target_room: "Select a room to shoot into "
+:out_of_arrows: "You ran out of arrows!"
+:wumpus_killed: "You killed the Wumpus!"
+:shot_missed: "Your shot missed!"
+:game_over: "Game over!!!"

@@ -1,4 +1,4 @@
-require_relative 'app/wumpus'
+require_relative 'app/narrator'
 
 game = WumpusGame.new
-game.start
+Narrator.new(game).play_game

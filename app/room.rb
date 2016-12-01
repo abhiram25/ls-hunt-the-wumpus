@@ -20,19 +20,6 @@ class Room
     @hazard = hazard
   end
 
-  def move_outcome
-    case hazard
-    when :bat
-      { result: :carried, message: 'You were carried by bats to another room.' }
-    when :pit
-      { result: :dead, message: 'You fell into a pit and died.' }
-    when :wumpus
-      { result: :dead, message: 'You were killed by the Wumpus.' }
-    else
-      { result: :safe, message: 'This room is safe. Whew!' }
-    end
-  end
-
   def message
     case hazard
     when :bat
